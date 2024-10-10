@@ -11,10 +11,10 @@ class ShopifyService
     protected $baseUrl;
 
     const GRAPHQL_VERSION = '2024-10';
-    //@todo > 100 do not working need to fix
+    //@todo check if it possible to filter > 100 in graphQL
     const ORDER_QUERY = <<<GRAPHQL
         query GetOrders(\$cursor: String) {
-                orders(first: 25, after: \$cursor, query: "current_total_price:>=100") {
+                orders(first: 250, after: \$cursor) {
                     edges {
                     cursor
                     node {
@@ -44,21 +44,28 @@ class ShopifyService
 
     public function __construct()
     {
-        // $this->apiKey = env('SHOPIFY_API_KEY');
         $this->apiPassword = env('SHOPIFY_API_PASSWORD');
         $this->baseUrl = env('SHOPIFY_BASE_URL');
     }
 
-    public function importOrders()
+    public function importOrders($minTotalPrice = 100)
     {
         $cursor = null;
 
         do {
             $ordersData = json_decode($this->getOrders($cursor), true);
-
             if (!empty($ordersData['data']['orders']['edges'])) {
+                // Filter the orders by price greater than $minTotalPrice
+                $filteredOrders = array_filter($ordersData['data']['orders']['edges'], function($order) use ($minTotalPrice) {
+                    return $order['node']['currentTotalPriceSet']['shopMoney']['amount'] > $minTotalPrice;
+                });
+
+                // Maintain the structure of $ordersData while updating the edges
+                $ordersData['data']['orders']['edges'] = array_values($filteredOrders);
+
                 $this->saveOrders($ordersData['data']['orders']['edges']);
                 $cursor = end($ordersData['data']['orders']['edges'])['cursor'];
+                break;
             } else {
                 $cursor = null;
             }
@@ -101,6 +108,7 @@ class ShopifyService
                     'fulfillment_status' => $order['displayFulfillmentStatus'],
                     'created_at'         => now(),
                     'updated_at'         => now(),
+                    'customer_email'     => $order['customer']['email'] ?? ''
                 ];
             }
 
@@ -109,12 +117,12 @@ class ShopifyService
 
             // Get saved customer IDs to link them to orders
             $savedCustomers = Customer::whereIn('email', $customerEmails)->get(['id', 'email'])->keyBy('email');
-
             // Update orders with correct customer IDs
-            foreach ($ordersToSave as &$order) {
-                if(isset($order['customer']['email'])) {
-                    $customerEmail = $order['customer']['email'];
-                    $order['customer_id'] = $savedCustomers[$customerEmail]->id ?? null;
+            foreach ($ordersToSave as &$orderToSave) { // Use & to modify by reference
+                if (isset($orderToSave['customer_email'])) { // Check for customer email
+                    $customerEmail = $orderToSave['customer_email'];
+                    unset($orderToSave['customer_email']); // Unset the email from the current order
+                    $orderToSave['customer_id'] = $savedCustomers[$customerEmail]->id ?? null; // Assign customer ID
                 }
             }
 

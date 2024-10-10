@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\OrderFilterRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\Customer;
 use App\Services\ShopifyService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
 class OrderController extends Controller
@@ -19,19 +19,16 @@ class OrderController extends Controller
         $this->shopifyService = $shopifyService;
     }
 
-    public function getOrders(Request $request)
+    public function getOrders(OrderFilterRequest $request)
     {
         $query = Order::with('customer');
 
-        // Apply financial status filter if provided
-        //add validation
         if ($request->financial_status) {
             $query->where('financial_status', $request->financial_status);
         }
 
-        // Paginate the results (5 orders per page)
         $orders = $query->paginate(5);
-        // Return JSON for AJAX
+
         return OrderResource::collection($orders);
     }
 
