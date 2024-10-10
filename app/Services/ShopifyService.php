@@ -6,11 +6,12 @@ use App\Models\Order;
 
 class ShopifyService
 {
-    protected $apiKey;
+    // protected $apiKey;
     protected $apiPassword;
     protected $baseUrl;
 
     const GRAPHQL_VERSION = '2024-10';
+    //@todo > 100 do not working need to fix
     const ORDER_QUERY = <<<GRAPHQL
         query GetOrders(\$cursor: String) {
                 orders(first: 250, after: \$cursor, query: "current_total_price:>=100") {
@@ -43,7 +44,7 @@ class ShopifyService
 
     public function __construct()
     {
-        $this->apiKey = env('SHOPIFY_API_KEY');
+        // $this->apiKey = env('SHOPIFY_API_KEY');
         $this->apiPassword = env('SHOPIFY_API_PASSWORD');
         $this->baseUrl = env('SHOPIFY_BASE_URL');
     }
