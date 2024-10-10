@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_id')->constrained('customers');
+            $table->bigInteger('customer_id')->nullable();
             $table->string('shopify_order_id')->unique();
             $table->decimal('total_price', 10, 2);
             $table->string('financial_status');

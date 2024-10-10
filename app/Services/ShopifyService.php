@@ -3,10 +3,10 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\Order;
+use Illuminate\Support\Facades\DB;
 
 class ShopifyService
 {
-    // protected $apiKey;
     protected $apiPassword;
     protected $baseUrl;
 
@@ -14,7 +14,7 @@ class ShopifyService
     //@todo > 100 do not working need to fix
     const ORDER_QUERY = <<<GRAPHQL
         query GetOrders(\$cursor: String) {
-                orders(first: 250, after: \$cursor, query: "current_total_price:>=100") {
+                orders(first: 25, after: \$cursor, query: "current_total_price:>=100") {
                     edges {
                     cursor
                     node {
@@ -73,42 +73,55 @@ class ShopifyService
 
     private function saveOrders(array $orderEdges)
     {
-        $customersToSave = [];
-        $ordersToSave = [];
+        DB::transaction(function () use ($orderEdges) {
+            $customersToSave = [];
+            $ordersToSave = [];
+            $customerEmails = [];
 
-        foreach ($orderEdges as $orderEdge) {
-            $order = $orderEdge['node'];
+            // Collect customer and order data
+            foreach ($orderEdges as $orderEdge) {
+                $order = $orderEdge['node'];
 
-            if(isset($order['customer']['email'])) {
-                $customersToSave[] = [
-                    'first_name' => $order['customer']['firstName'] ?? null,
-                    'last_name'  => $order['customer']['lastName'] ?? null,
-                    'email'      => $order['customer']['email'],
+                if (isset($order['customer']['email'])) {
+                    $customerEmail = $order['customer']['email'];
+                    $customerEmails[] = $customerEmail;
+
+                    $customersToSave[$customerEmail] = [
+                        'first_name' => $order['customer']['firstName'] ?? null,
+                        'last_name'  => $order['customer']['lastName'] ?? null,
+                        'email'      => $customerEmail,
+                        'updated_at' => now(),
+                    ];
+                }
+
+                $ordersToSave[] = [
+                    'shopify_order_id'   => $order['id'],
+                    'total_price'        => $order['currentTotalPriceSet']['shopMoney']['amount'],
+                    'financial_status'   => $order['displayFinancialStatus'],
+                    'fulfillment_status' => $order['displayFulfillmentStatus'],
+                    'created_at'         => now(),
+                    'updated_at'         => now(),
                 ];
             }
 
-            $ordersToSave[] = [
-                'shopify_order_id'   => $order['id'],
-                'total_price'        => $order['currentTotalPriceSet']['shopMoney']['amount'],
-                'financial_status'   => $order['displayFinancialStatus'],
-                'fulfillment_status' => $order['displayFulfillmentStatus'],
-                'customer_id'       => 1, //@todo fix
-                'created_at'        => now(),
-                'updated_at'        => now(),
-            ];
-        }
+            // Batch upsert customers
+            Customer::upsert(array_values($customersToSave), ['email'], ['first_name', 'last_name', 'updated_at']);
 
-        foreach ($customersToSave as $customer) {
-            $ret = Customer::upsert(
-                [$customer],
-                ['email'], // unique column to avoid duplicates
-                ['first_name', 'last_name', 'updated_at'] // columns to update
-            );
-        }
+            // Get saved customer IDs to link them to orders
+            $savedCustomers = Customer::whereIn('email', $customerEmails)->get(['id', 'email'])->keyBy('email');
 
-        Order::upsert($ordersToSave, ['shopify_order_id'], ['total_price', 'financial_status', 'fulfillment_status', 'updated_at']);
+            // Update orders with correct customer IDs
+            foreach ($ordersToSave as &$order) {
+                if(isset($order['customer']['email'])) {
+                    $customerEmail = $order['customer']['email'];
+                    $order['customer_id'] = $savedCustomers[$customerEmail]->id ?? null;
+                }
+            }
+
+            // Batch upsert orders
+            Order::upsert($ordersToSave, ['shopify_order_id'], ['total_price', 'financial_status', 'fulfillment_status', 'updated_at']);
+        });
     }
-
 
 
     private function makeGraphqlRequest($query, $variables)

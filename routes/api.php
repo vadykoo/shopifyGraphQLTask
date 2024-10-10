@@ -10,3 +10,4 @@ Route::get('/user', function (Request $request) {
 
 Route::get('/import-orders', [OrderController::class, 'import']);
 Route::post('/import-orders', [OrderController::class, 'import']);
+Route::get('/orders', [OrderController::class, 'getOrders'])->name('orders.get');
