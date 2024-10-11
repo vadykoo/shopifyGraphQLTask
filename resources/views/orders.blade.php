@@ -19,8 +19,10 @@
                     <div class="container-fluid">
 
                         <div class="page-layout-header">
-                            <h1 class="page-layout-title">Page header</h1>
-                            <p class="page-layout-subtitle">Page layout subtitle</p>
+                            <h1 class="page-layout-title">Shopify orders reader</h1>
+                            <p class="page-layout-subtitle">On this page you can import and read all shopify orders with total price more than 100</p>
+                            <p class="page-layout-subtitle">Page has a filter by financial status and works entirely with Ajax without reloading</p>
+                            <p class="page-layout-subtitle">It uses custom styles from Nexaris v3</p>
                         </div>
 
                         <div class="page-layout-section">
@@ -34,6 +36,9 @@
                                                 <div class="select-holder">
                                                     <select id="financial-status-filter">
                                                         <option value="" selected>All</option>
+                                                        @php
+                                                            $financial_statuses = ['paid','pending','authorized','partially_paid','partially_refunded','refunded','voided','expired'];
+                                                        @endphp
                                                         @foreach ($financial_statuses as $status)
                                                             <option value="{{strtolower($status)}}">{{ucfirst($status)}}</option>
                                                         @endforeach
@@ -45,8 +50,7 @@
                                         </div>
                                         <div class="col-lg-4">
                                         </div>
-                                        <div class="col-lg-4">
-
+                                        <div class="col-lg-4 text-right">
                                             <button class="btn btn-secondary btn-icon" id="import-button">
                                                 <span class="btn-icon-holder">
                                                     <svg viewBox="0 0 20 20" class="Icon_Icon__Dm3QW"
@@ -55,7 +59,7 @@
                                                             d="M10 20c-5.514 0-10-4.486-10-10s4.486-10 10-10 10 4.486 10 10-4.486 10-10 10zm-1-8.414-1.293-1.293a1 1 0 0 0-1.414 1.414l3 3a.998.998 0 0 0 1.414 0l3-3a1 1 0 0 0-1.414-1.414l-1.293 1.293v-5.586a1 1 0 0 0-2 0v5.586z">
                                                         </path>
                                                     </svg>
-                                                </span>Import
+                                                </span>Import data
                                             </button>
                                         </div>
                                     </div>

@@ -9,7 +9,12 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             const pageUrl = e.target.href;
             const page = new URL(pageUrl).searchParams.get('page');
-            loadOrders(page);
+
+            // Get the currently selected financial status
+            const financialStatus = document.getElementById('financial-status-filter').value;
+
+            // Load orders with the selected financial status
+            loadOrders(page, financialStatus);
         }
     });
 

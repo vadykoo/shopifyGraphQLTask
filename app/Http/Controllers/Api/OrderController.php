@@ -7,14 +7,13 @@ use App\Http\Requests\OrderFilterRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\Customer;
-use App\Services\ShopifyService;
-use Illuminate\Support\Facades\Schema;
+use App\Services\ShopifyServiceInterface;
 
 class OrderController extends Controller
 {
     protected $shopifyService;
 
-    public function __construct(ShopifyService $shopifyService)
+    public function __construct(ShopifyServiceInterface $shopifyService)
     {
         $this->shopifyService = $shopifyService;
     }
@@ -34,10 +33,8 @@ class OrderController extends Controller
 
     public function import()
     {
-        Schema::disableForeignKeyConstraints();
         Customer::truncate();
         Order::truncate();
-        Schema::enableForeignKeyConstraints();
 
         if(!Order::first() and !Customer::first()) {
             $this->shopifyService->importOrders();

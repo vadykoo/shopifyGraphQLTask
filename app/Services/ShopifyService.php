@@ -5,13 +5,12 @@ use App\Models\Customer;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 
-class ShopifyService
+class ShopifyService implements ShopifyServiceInterface
 {
     protected $apiPassword;
     protected $baseUrl;
 
     const GRAPHQL_VERSION = '2024-10';
-    //@todo check if it possible to filter > 100 in graphQL
     const ORDER_QUERY = <<<GRAPHQL
         query GetOrders(\$cursor: String) {
                 orders(first: 250, after: \$cursor) {
@@ -60,12 +59,11 @@ class ShopifyService
                     return $order['node']['currentTotalPriceSet']['shopMoney']['amount'] > $minTotalPrice;
                 });
 
-                // Maintain the structure of $ordersData while updating the edges
                 $ordersData['data']['orders']['edges'] = array_values($filteredOrders);
 
                 $this->saveOrders($ordersData['data']['orders']['edges']);
                 $cursor = end($ordersData['data']['orders']['edges'])['cursor'];
-                break;
+                //break;
             } else {
                 $cursor = null;
             }

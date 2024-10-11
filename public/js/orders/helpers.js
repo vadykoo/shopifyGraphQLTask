@@ -37,7 +37,6 @@ export function renderPaginationLinks(links, $currentPage, $lastPage) {
 
     const div = document.createElement('div');
     div.classList.add('index-table-footer');
-    console.log(links);
     const resultText = document.createElement('div');
     resultText.classList.add('table-result');
     resultText.innerText = `Showing ${$currentPage} of ${$lastPage} results`;
