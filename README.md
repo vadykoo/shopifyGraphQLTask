@@ -1,3 +1,5 @@
+![](example_of_work.gif)
+
 ## About This Repo
 It is simple order importer and reader from Shopify with GraphQL API with custom filters dislayed as a table.
 

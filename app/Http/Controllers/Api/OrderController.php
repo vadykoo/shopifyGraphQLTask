@@ -35,7 +35,7 @@ class OrderController extends Controller
     {
         Customer::truncate();
         Order::truncate();
-
+        
         if(!Order::first() and !Customer::first()) {
             $this->shopifyService->importOrders();
             return response()->json(['message' => 'Data imported successfully']);
